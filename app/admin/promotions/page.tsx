@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ProtectedAdmin from '@/components/ProtectedAdmin'
-import { Plus, Edit2, Trash2, Tag, X, Save, DollarSign } from 'lucide-react'
+import { Plus, Edit2, Trash2, Tag, X, Save, DollarSign, RefreshCw } from 'lucide-react'
 
 interface Promotion {
   id: string
@@ -15,41 +15,9 @@ interface Promotion {
   active: boolean
 }
 
-const initialPromotions: Promotion[] = [
-  {
-    id: '1',
-    title: 'Private Dance',
-    price: '$10-15',
-    unit: 'per song',
-    description: 'Full contact, full friction private entertainment in a booth.',
-    features: ['Full contact', 'Full friction', 'Private booth'],
-    featured: false,
-    active: true,
-  },
-  {
-    id: '2',
-    title: 'Body Slide',
-    price: '$100',
-    unit: '10 minutes',
-    description: 'Our most popular VIP experience.',
-    features: ['Intimate experience', 'Premium service', 'Private room'],
-    featured: true,
-    active: true,
-  },
-  {
-    id: '3',
-    title: 'Champagne Room',
-    price: '$250+',
-    unit: '30 minutes',
-    description: 'The ultimate VIP experience with privacy and bottle service.',
-    features: ['Ultimate privacy', 'VIP treatment', 'Bottle service included'],
-    featured: false,
-    active: true,
-  },
-]
-
 export default function AdminPromotions() {
-  const [promotions, setPromotions] = useState<Promotion[]>(initialPromotions)
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [editingPromo, setEditingPromo] = useState<Promotion | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [newFeature, setNewFeature] = useState('')
@@ -65,31 +33,86 @@ export default function AdminPromotions() {
     active: true,
   }
 
+  useEffect(() => {
+    loadPromotions()
+  }, [])
+
+  const loadPromotions = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/admin/promotions')
+      if (response.ok) {
+        const data = await response.json()
+        setPromotions(data)
+      }
+    } catch (error) {
+      console.error('Failed to load promotions:', error)
+    }
+    setIsLoading(false)
+  }
+
   const handleSave = async () => {
     if (!editingPromo) return
 
-    if (isCreating) {
-      const newPromo = {
-        ...editingPromo,
-        id: Date.now().toString(),
+    try {
+      if (isCreating) {
+        const response = await fetch('/api/admin/promotions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingPromo),
+        })
+        if (response.ok) {
+          const newPromo = await response.json()
+          setPromotions(prev => [...prev, newPromo])
+        }
+      } else {
+        const response = await fetch('/api/admin/promotions', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingPromo),
+        })
+        if (response.ok) {
+          setPromotions(prev => prev.map(p => p.id === editingPromo.id ? editingPromo : p))
+        }
       }
-      setPromotions(prev => [...prev, newPromo])
-    } else {
-      setPromotions(prev => prev.map(p => p.id === editingPromo.id ? editingPromo : p))
+    } catch (error) {
+      console.error('Failed to save promotion:', error)
     }
 
     setEditingPromo(null)
     setIsCreating(false)
   }
 
-  const handleDelete = (id: string) => {
-    setPromotions(prev => prev.filter(p => p.id !== id))
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/admin/promotions?id=${id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        setPromotions(prev => prev.filter(p => p.id !== id))
+      }
+    } catch (error) {
+      console.error('Failed to delete promotion:', error)
+    }
   }
 
-  const toggleActive = (id: string) => {
-    setPromotions(prev => prev.map(p =>
-      p.id === id ? { ...p, active: !p.active } : p
-    ))
+  const toggleActive = async (id: string) => {
+    const promo = promotions.find(p => p.id === id)
+    if (!promo) return
+
+    const updated = { ...promo, active: !promo.active }
+    try {
+      const response = await fetch('/api/admin/promotions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      })
+      if (response.ok) {
+        setPromotions(prev => prev.map(p => p.id === id ? updated : p))
+      }
+    } catch (error) {
+      console.error('Failed to toggle promotion:', error)
+    }
   }
 
   const addFeature = () => {
@@ -120,92 +143,111 @@ export default function AdminPromotions() {
             <h1 className="text-3xl font-bold text-white">Promotions</h1>
             <p className="text-gray-400 mt-1">Manage VIP packages and special offers</p>
           </div>
-          <button
-            onClick={() => {
-              setEditingPromo(emptyPromo)
-              setIsCreating(true)
-            }}
-            className="btn-gold flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Add Promotion
-          </button>
-        </div>
-
-        {/* Promotions Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {promotions.map(promo => (
-            <div
-              key={promo.id}
-              className={`luxury-card p-6 relative ${
-                promo.featured ? 'border-gold-500/50' : ''
-              } ${!promo.active ? 'opacity-50' : ''}`}
+          <div className="flex gap-2">
+            <button
+              onClick={loadPromotions}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-luxury-card text-gray-300 rounded-sm hover:text-gold-500 transition-colors disabled:opacity-50"
             >
-              {promo.featured && (
-                <div className="absolute -top-3 left-4 px-3 py-1 bg-gold-500 text-black text-xs font-bold rounded">
-                  FEATURED
-                </div>
-              )}
-
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold text-white">{promo.title}</h3>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => {
-                      setEditingPromo(promo)
-                      setIsCreating(false)
-                    }}
-                    className="p-2 text-gray-400 hover:text-gold-500 transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(promo.id)}
-                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-gold-gradient">{promo.price}</span>
-                <span className="text-gray-400 text-sm ml-2">/ {promo.unit}</span>
-              </div>
-
-              <p className="text-gray-400 text-sm mb-4">{promo.description}</p>
-
-              <ul className="space-y-2 mb-4">
-                {promo.features.map((feature, i) => (
-                  <li key={i} className="flex items-center text-gray-300 text-sm">
-                    <span className="w-1.5 h-1.5 bg-gold-500 rounded-full mr-2"></span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => toggleActive(promo.id)}
-                className={`w-full py-2 rounded text-sm font-medium transition-colors ${
-                  promo.active
-                    ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
-                    : 'bg-gray-500/10 text-gray-400 hover:bg-gray-500/20'
-                }`}
-              >
-                {promo.active ? 'Active' : 'Inactive'}
-              </button>
-            </div>
-          ))}
+              <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                setEditingPromo(emptyPromo)
+                setIsCreating(true)
+              }}
+              className="btn-gold flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Add Promotion
+            </button>
+          </div>
         </div>
 
-        {promotions.length === 0 && (
+        {isLoading ? (
           <div className="luxury-card p-12 text-center">
-            <Tag size={48} className="mx-auto mb-4 text-gray-600" />
-            <p className="text-gray-400">No promotions created yet.</p>
-            <p className="text-gray-500 text-sm mt-1">
-              Add your first promotion to get started.
-            </p>
+            <RefreshCw size={48} className="mx-auto mb-4 text-gold-500 animate-spin" />
+            <p className="text-gray-400">Loading promotions...</p>
           </div>
+        ) : (
+          <>
+            {/* Promotions Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promotions.map(promo => (
+                <div
+                  key={promo.id}
+                  className={`luxury-card p-6 relative ${
+                    promo.featured ? 'border-gold-500/50' : ''
+                  } ${!promo.active ? 'opacity-50' : ''}`}
+                >
+                  {promo.featured && (
+                    <div className="absolute -top-3 left-4 px-3 py-1 bg-gold-500 text-black text-xs font-bold rounded">
+                      FEATURED
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-semibold text-white">{promo.title}</h3>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingPromo(promo)
+                          setIsCreating(false)
+                        }}
+                        className="p-2 text-gray-400 hover:text-gold-500 transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(promo.id)}
+                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gold-gradient">{promo.price}</span>
+                    <span className="text-gray-400 text-sm ml-2">/ {promo.unit}</span>
+                  </div>
+
+                  <p className="text-gray-400 text-sm mb-4">{promo.description}</p>
+
+                  <ul className="space-y-2 mb-4">
+                    {promo.features.map((feature, i) => (
+                      <li key={i} className="flex items-center text-gray-300 text-sm">
+                        <span className="w-1.5 h-1.5 bg-gold-500 rounded-full mr-2"></span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    onClick={() => toggleActive(promo.id)}
+                    className={`w-full py-2 rounded text-sm font-medium transition-colors ${
+                      promo.active
+                        ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                        : 'bg-gray-500/10 text-gray-400 hover:bg-gray-500/20'
+                    }`}
+                  >
+                    {promo.active ? 'Active' : 'Inactive'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {promotions.length === 0 && (
+              <div className="luxury-card p-12 text-center">
+                <Tag size={48} className="mx-auto mb-4 text-gray-600" />
+                <p className="text-gray-400">No promotions created yet.</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Add your first promotion to get started.
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Edit Modal */}
@@ -285,10 +327,11 @@ export default function AdminPromotions() {
                       onChange={e => setNewFeature(e.target.value)}
                       className="form-input flex-1"
                       placeholder="Add a feature"
-                      onKeyPress={e => e.key === 'Enter' && addFeature()}
+                      onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addFeature())}
                     />
                     <button
                       onClick={addFeature}
+                      type="button"
                       className="btn-outline-gold px-4"
                     >
                       Add

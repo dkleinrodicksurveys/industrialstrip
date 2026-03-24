@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { cookies } from 'next/headers'
 import { addPhoto, deletePhoto, getPhotos, Photo } from '@/lib/storage'
-import { writeFile, unlink, mkdir } from 'fs/promises'
-import path from 'path'
 
-// Check if we're using Vercel Blob or local storage
-const useVercelBlob = !!process.env.BLOB_READ_WRITE_TOKEN
+// Simple auth check
+async function isAuthenticated() {
+  const cookieStore = await cookies()
+  const authCookie = cookieStore.get('admin-auth')
+  return authCookie?.value === 'authenticated'
+}
 
 export async function GET() {
   try {
@@ -18,53 +19,23 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!await isAuthenticated()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const category = formData.get('category') as string || 'venue'
+    const data = await request.json()
+    const { url, category, alt } = data
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-    }
-
-    let url: string
-
-    if (useVercelBlob) {
-      // Upload to Vercel Blob
-      const { put } = await import('@vercel/blob')
-      const blob = await put(`gallery/${Date.now()}-${file.name}`, file, {
-        access: 'public',
-      })
-      url = blob.url
-    } else {
-      // Save locally for development
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-
-      // Create uploads directory if it doesn't exist
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-      try {
-        await mkdir(uploadsDir, { recursive: true })
-      } catch {
-        // Directory might already exist
-      }
-
-      const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-      const filepath = path.join(uploadsDir, filename)
-      await writeFile(filepath, buffer)
-      url = `/uploads/${filename}`
+    if (!url) {
+      return NextResponse.json({ error: 'No URL provided' }, { status: 400 })
     }
 
     const photo: Photo = {
       id: Date.now().toString(),
       url,
-      category,
-      alt: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+      category: category || 'venue',
+      alt: alt || 'Photo',
       createdAt: new Date().toISOString(),
     }
 
@@ -72,14 +43,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(photo)
   } catch (error) {
-    console.error('Upload error:', error)
-    return NextResponse.json({ error: 'Failed to upload photo' }, { status: 500 })
+    console.error('Add photo error:', error)
+    return NextResponse.json({ error: 'Failed to add photo' }, { status: 500 })
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!await isAuthenticated()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -89,30 +59,6 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'No ID provided' }, { status: 400 })
-    }
-
-    // Get the photo to find its URL
-    const photos = await getPhotos()
-    const photo = photos.find(p => p.id === id)
-
-    if (photo) {
-      if (useVercelBlob && photo.url.includes('blob.vercel-storage.com')) {
-        // Delete from Vercel Blob
-        try {
-          const { del } = await import('@vercel/blob')
-          await del(photo.url)
-        } catch {
-          // Continue even if blob deletion fails
-        }
-      } else if (photo.url.startsWith('/uploads/')) {
-        // Delete local file
-        try {
-          const filepath = path.join(process.cwd(), 'public', photo.url)
-          await unlink(filepath)
-        } catch {
-          // Continue even if local deletion fails
-        }
-      }
     }
 
     await deletePhoto(id)

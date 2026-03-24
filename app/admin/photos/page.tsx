@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
-import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import ProtectedAdmin from '@/components/ProtectedAdmin'
-import { Upload, Trash2, Image as ImageIcon, X, Check, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, Image as ImageIcon, X, Check, RefreshCw, Link } from 'lucide-react'
 
 interface Photo {
   id: string
@@ -22,13 +21,12 @@ const categories = [
 export default function AdminPhotos() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isUploading, setIsUploading] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState('venue')
-  const [dragActive, setDragActive] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('dancers')
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newPhotoUrl, setNewPhotoUrl] = useState('')
+  const [newPhotoAlt, setNewPhotoAlt] = useState('')
 
-  // Load photos on mount
   useEffect(() => {
     loadPhotos()
   }, [])
@@ -47,62 +45,29 @@ export default function AdminPhotos() {
     setIsLoading(false)
   }
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
-    }
-  }, [])
+  const addPhotoByUrl = async () => {
+    if (!newPhotoUrl.trim()) return
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
+    try {
+      const response = await fetch('/api/admin/photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: newPhotoUrl.trim(),
+          category: selectedCategory,
+          alt: newPhotoAlt.trim() || 'Photo',
+        }),
+      })
 
-    const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith('image/')
-    )
-    if (files.length > 0) {
-      await uploadFiles(files)
-    }
-  }, [])
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      await uploadFiles(Array.from(files))
-    }
-  }
-
-  const uploadFiles = async (files: File[]) => {
-    setIsUploading(true)
-
-    for (const file of files) {
-      try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('category', selectedCategory)
-
-        const response = await fetch('/api/admin/photos', {
-          method: 'POST',
-          body: formData,
-        })
-
-        if (response.ok) {
-          const newPhoto = await response.json()
-          setPhotos(prev => [newPhoto, ...prev])
-        }
-      } catch (error) {
-        console.error('Upload failed:', error)
+      if (response.ok) {
+        const newPhoto = await response.json()
+        setPhotos(prev => [newPhoto, ...prev])
+        setNewPhotoUrl('')
+        setNewPhotoAlt('')
+        setShowAddModal(false)
       }
-    }
-
-    setIsUploading(false)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    } catch (error) {
+      console.error('Failed to add photo:', error)
     }
   }
 
@@ -134,6 +99,10 @@ export default function AdminPhotos() {
     )
   }
 
+  const filteredPhotos = photos.filter(p =>
+    selectedCategory === 'all' || p.category === selectedCategory
+  )
+
   return (
     <ProtectedAdmin>
       <div className="space-y-8">
@@ -158,145 +127,218 @@ export default function AdminPhotos() {
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 rounded-sm hover:bg-red-500/20 transition-colors"
               >
                 <Trash2 size={18} />
-                Delete Selected ({selectedPhotos.length})
+                Delete ({selectedPhotos.length})
               </button>
             )}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-gold flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Add Photo
+            </button>
           </div>
         </div>
 
-        {/* Upload Area */}
-        <div
-          className={`luxury-card p-8 border-2 border-dashed transition-all duration-200 ${
-            dragActive ? 'border-gold-500 bg-gold-500/5' : 'border-luxury-border'
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gold-500/10 flex items-center justify-center">
-              <Upload size={32} className="text-gold-500" />
-            </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {isUploading ? 'Uploading...' : 'Upload Photos'}
-            </h3>
-            <p className="text-gray-400 mb-4">
-              Drag and drop images here, or click to select
-            </p>
-
-            {/* Category Selection */}
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-sm transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-gold-500 text-black font-semibold'
-                      : 'bg-luxury-dark text-gray-300 hover:text-gold-500'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-              id="file-upload"
-            />
-            <label
-              htmlFor="file-upload"
-              className="btn-outline-gold cursor-pointer inline-block"
+        {/* Category Filter */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-4 py-2 rounded-full text-sm transition-all ${
+              selectedCategory === 'all'
+                ? 'bg-gold-500 text-black font-semibold'
+                : 'bg-luxury-card text-gray-300 hover:text-gold-500'
+            }`}
+          >
+            All ({photos.length})
+          </button>
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-4 py-2 rounded-full text-sm transition-all ${
+                selectedCategory === cat.id
+                  ? 'bg-gold-500 text-black font-semibold'
+                  : 'bg-luxury-card text-gray-300 hover:text-gold-500'
+              }`}
             >
-              Select Files
-            </label>
-          </div>
+              {cat.label} ({photos.filter(p => p.category === cat.id).length})
+            </button>
+          ))}
         </div>
 
         {/* Photos Grid */}
-        <div>
-          <h2 className="text-xl font-semibold text-white mb-4">
-            Gallery ({photos.length} photos)
-          </h2>
+        {isLoading ? (
+          <div className="luxury-card p-12 text-center">
+            <RefreshCw size={48} className="mx-auto mb-4 text-gold-500 animate-spin" />
+            <p className="text-gray-400">Loading photos...</p>
+          </div>
+        ) : filteredPhotos.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {filteredPhotos.map(photo => (
+              <div
+                key={photo.id}
+                className={`relative aspect-square luxury-card overflow-hidden group cursor-pointer ${
+                  selectedPhotos.includes(photo.id) ? 'ring-2 ring-gold-500' : ''
+                }`}
+                onClick={() => toggleSelect(photo.id)}
+              >
+                <img
+                  src={photo.url}
+                  alt={photo.alt}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23333" width="100" height="100"/><text fill="%23666" x="50" y="55" text-anchor="middle" font-size="12">No Image</text></svg>'
+                  }}
+                />
 
-          {photos.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {photos.map(photo => (
-                <div
-                  key={photo.id}
-                  className={`relative aspect-square luxury-card overflow-hidden group cursor-pointer ${
-                    selectedPhotos.includes(photo.id) ? 'ring-2 ring-gold-500' : ''
-                  }`}
-                  onClick={() => toggleSelect(photo.id)}
-                >
-                  {/* Actual image */}
-                  {photo.url ? (
-                    <img
-                      src={photo.url}
-                      alt={photo.alt}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-luxury-card to-luxury-dark flex items-center justify-center">
-                      <ImageIcon size={32} className="text-gold-500/30" />
-                    </div>
+                {/* Selection indicator */}
+                <div className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all z-10 ${
+                  selectedPhotos.includes(photo.id)
+                    ? 'bg-gold-500 border-gold-500'
+                    : 'border-white/50 bg-black/30 group-hover:border-white'
+                }`}>
+                  {selectedPhotos.includes(photo.id) && (
+                    <Check size={14} className="text-black" />
                   )}
-
-                  {/* Selection indicator */}
-                  <div className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all z-10 ${
-                    selectedPhotos.includes(photo.id)
-                      ? 'bg-gold-500 border-gold-500'
-                      : 'border-white/50 bg-black/30 group-hover:border-white'
-                  }`}>
-                    {selectedPhotos.includes(photo.id) && (
-                      <Check size={14} className="text-black" />
-                    )}
-                  </div>
-
-                  {/* Category badge */}
-                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 rounded text-xs text-gray-300 z-10">
-                    {photo.category}
-                  </div>
-
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deletePhoto(photo.id)
-                    }}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 z-10"
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="luxury-card p-12 text-center">
-              <ImageIcon size={48} className="mx-auto mb-4 text-gray-600" />
-              <p className="text-gray-400">No photos uploaded yet.</p>
-              <p className="text-gray-500 text-sm mt-1">
-                Upload some images to get started.
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Instructions */}
+                {/* Category badge */}
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 rounded text-xs text-gray-300 z-10">
+                  {photo.category}
+                </div>
+
+                {/* Delete button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deletePhoto(photo.id)
+                  }}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 z-10"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="luxury-card p-12 text-center">
+            <ImageIcon size={48} className="mx-auto mb-4 text-gray-600" />
+            <p className="text-gray-400">No photos in this category.</p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="mt-4 btn-outline-gold"
+            >
+              Add Photo
+            </button>
+          </div>
+        )}
+
+        {/* Add Photo Modal */}
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+            <div className="luxury-card w-full max-w-md">
+              <div className="p-6 border-b border-luxury-border flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-white">Add Photo</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="form-label">Image URL</label>
+                  <div className="relative">
+                    <Link size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="url"
+                      value={newPhotoUrl}
+                      onChange={e => setNewPhotoUrl(e.target.value)}
+                      className="form-input pl-12"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  <p className="text-gray-500 text-xs mt-2">
+                    Paste a direct link to an image (JPG, PNG, WebP)
+                  </p>
+                </div>
+
+                {newPhotoUrl && (
+                  <div className="border border-luxury-border rounded-sm p-2">
+                    <img
+                      src={newPhotoUrl}
+                      alt="Preview"
+                      className="w-full h-40 object-cover rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="form-label">Description (optional)</label>
+                  <input
+                    type="text"
+                    value={newPhotoAlt}
+                    onChange={e => setNewPhotoAlt(e.target.value)}
+                    className="form-input"
+                    placeholder="Photo description"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`px-4 py-2 rounded-full text-sm transition-all ${
+                          selectedCategory === cat.id
+                            ? 'bg-gold-500 text-black font-semibold'
+                            : 'bg-luxury-dark text-gray-300 hover:text-gold-500'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-luxury-border flex justify-end gap-4">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addPhotoByUrl}
+                  disabled={!newPhotoUrl.trim()}
+                  className="btn-gold flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Plus size={18} />
+                  Add Photo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tips */}
         <div className="luxury-card p-6">
           <h3 className="font-semibold text-white mb-2">Tips</h3>
           <ul className="text-gray-400 text-sm space-y-1">
-            <li>• Upload images in JPG, PNG, or WebP format for best results</li>
-            <li>• Recommended size: 1200x800 pixels or larger</li>
-            <li>• Photos will automatically appear in the public gallery</li>
-            <li>• Select a category before uploading to organize your photos</li>
+            <li>• Add photos by pasting image URLs from any image hosting service</li>
+            <li>• You can use Imgur, Cloudinary, or any direct image link</li>
+            <li>• Photos automatically appear in the public gallery</li>
+            <li>• Click photos to select them for bulk deletion</li>
           </ul>
         </div>
       </div>

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { cookies } from 'next/headers'
 import { getPromotions, addPromotion, updatePromotion, deletePromotion, Promotion } from '@/lib/storage'
+
+async function isAuthenticated() {
+  const cookieStore = await cookies()
+  const authCookie = cookieStore.get('admin-auth')
+  return authCookie?.value === 'authenticated'
+}
 
 export async function GET() {
   try {
@@ -13,8 +18,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!await isAuthenticated()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -29,8 +33,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!await isAuthenticated()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -44,8 +47,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) {
+  if (!await isAuthenticated()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
