@@ -140,7 +140,7 @@ export default function AdminPromotions() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Promotions</h1>
+            <h1 className="text-3xl font-bold text-white">VIP Packages</h1>
             <p className="text-gray-400 mt-1">Manage VIP packages and special offers</p>
           </div>
           <div className="flex gap-2">
@@ -157,12 +157,27 @@ export default function AdminPromotions() {
                 setEditingPromo(emptyPromo)
                 setIsCreating(true)
               }}
-              className="bg-gold-500 text-black font-semibold py-3 px-6 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2"
+              className="bg-gold-500 text-black font-bold py-3 px-8 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2 shadow-lg shadow-gold-500/50"
             >
-              <Plus size={18} />
-              Add Promotion
+              <Plus size={20} />
+              ADD PACKAGE
             </button>
           </div>
+        </div>
+
+        {/* Quick Add Button */}
+        <div className="bg-gold-500/10 border-2 border-gold-500 border-dashed rounded-lg p-6 text-center">
+          <p className="text-gold-500 mb-3">Click below to create a new VIP package</p>
+          <button
+            onClick={() => {
+              setEditingPromo(emptyPromo)
+              setIsCreating(true)
+            }}
+            className="bg-gold-500 text-black font-bold py-4 px-12 rounded-sm text-lg hover:bg-gold-400 transition-all inline-flex items-center gap-3 shadow-xl"
+          >
+            <Plus size={24} />
+            CREATE NEW PACKAGE
+          </button>
         </div>
 
         {isLoading ? (

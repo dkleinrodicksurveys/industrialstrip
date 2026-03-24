@@ -138,12 +138,27 @@ export default function AdminEvents() {
                 setEditingEvent(emptyEvent)
                 setIsCreating(true)
               }}
-              className="bg-gold-500 text-black font-semibold py-3 px-6 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2"
+              className="bg-gold-500 text-black font-bold py-3 px-8 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2 shadow-lg shadow-gold-500/50"
             >
-              <Plus size={18} />
-              Add Event
+              <Plus size={20} />
+              ADD EVENT
             </button>
           </div>
+        </div>
+
+        {/* Quick Add Button - Always visible */}
+        <div className="bg-gold-500/10 border-2 border-gold-500 border-dashed rounded-lg p-6 text-center">
+          <p className="text-gold-500 mb-3">Click below to create a new event</p>
+          <button
+            onClick={() => {
+              setEditingEvent(emptyEvent)
+              setIsCreating(true)
+            }}
+            className="bg-gold-500 text-black font-bold py-4 px-12 rounded-sm text-lg hover:bg-gold-400 transition-all inline-flex items-center gap-3 shadow-xl"
+          >
+            <Plus size={24} />
+            CREATE NEW EVENT
+          </button>
         </div>
 
         {/* Events List */}

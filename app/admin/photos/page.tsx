@@ -132,12 +132,24 @@ export default function AdminPhotos() {
             )}
             <button
               onClick={() => setShowAddModal(true)}
-              className="bg-gold-500 text-black font-semibold py-3 px-6 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2"
+              className="bg-gold-500 text-black font-bold py-3 px-8 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2 shadow-lg shadow-gold-500/50"
             >
-              <Plus size={18} />
-              Add Photo
+              <Plus size={20} />
+              ADD PHOTO
             </button>
           </div>
+        </div>
+
+        {/* Quick Add Button */}
+        <div className="bg-gold-500/10 border-2 border-gold-500 border-dashed rounded-lg p-6 text-center">
+          <p className="text-gold-500 mb-3">Click below to add a new photo by URL</p>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-gold-500 text-black font-bold py-4 px-12 rounded-sm text-lg hover:bg-gold-400 transition-all inline-flex items-center gap-3 shadow-xl"
+          >
+            <Plus size={24} />
+            ADD NEW PHOTO
+          </button>
         </div>
 
         {/* Category Filter */}
