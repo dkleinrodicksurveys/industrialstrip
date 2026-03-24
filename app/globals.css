@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-playfair: 'Playfair Display', serif;
+  --font-inter: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-inter);
+  background-color: #0a0a0a;
+  color: #ffffff;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8960c;
+}
+
+/* Gold text gradient */
+.text-gold-gradient {
+  background: linear-gradient(110deg, #d4af37 0%, #f5d77a 45%, #d4af37 55%, #b8960c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold border glow */
+.gold-glow {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.gold-glow-hover:hover {
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+}
+
+/* Button styles */
+.btn-gold {
+  @apply bg-gold-500 text-black font-semibold py-3 px-8 rounded-sm
+         transition-all duration-300 hover:bg-gold-400
+         hover:shadow-lg hover:shadow-gold-500/30;
+}
+
+.btn-outline-gold {
+  @apply border-2 border-gold-500 text-gold-500 font-semibold py-3 px-8 rounded-sm
+         transition-all duration-300 hover:bg-gold-500 hover:text-black;
+}
+
+/* Card styles */
+.luxury-card {
+  @apply bg-luxury-card border border-luxury-border rounded-sm
+         transition-all duration-300 hover:border-gold-500/50;
+}
+
+/* Section divider */
+.section-divider {
+  @apply h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent my-16;
+}
+
+/* Animated underline */
+.animated-underline {
+  position: relative;
+}
+
+.animated-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #d4af37, #f5d77a);
+  transition: width 0.3s ease;
+}
+
+.animated-underline:hover::after {
+  width: 100%;
+}
+
+/* Hero section overlay */
+.hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 10, 0.7) 0%,
+    rgba(10, 10, 10, 0.5) 50%,
+    rgba(10, 10, 10, 0.9) 100%
+  );
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+/* Image hover zoom */
+.img-zoom {
+  @apply overflow-hidden;
+}
+
+.img-zoom img {
+  @apply transition-transform duration-500;
+}
+
+.img-zoom:hover img {
+  @apply scale-110;
+}
+
+/* Form styles */
+.form-input {
+  @apply w-full bg-luxury-dark border border-luxury-border rounded-sm px-4 py-3
+         text-white placeholder-gray-500 focus:outline-none focus:border-gold-500
+         transition-colors duration-300;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-300 mb-2;
+}
+
+/* Admin panel styles */
+.admin-sidebar {
+  @apply bg-luxury-dark border-r border-luxury-border min-h-screen w-64 p-6;
+}
+
+.admin-nav-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-sm text-gray-300
+         transition-colors duration-200 hover:bg-luxury-card hover:text-gold-500;
+}
+
+.admin-nav-item.active {
+  @apply bg-luxury-card text-gold-500 border-l-2 border-gold-500;
+}
