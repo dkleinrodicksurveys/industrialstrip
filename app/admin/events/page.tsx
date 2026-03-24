@@ -138,7 +138,7 @@ export default function AdminEvents() {
                 setEditingEvent(emptyEvent)
                 setIsCreating(true)
               }}
-              className="btn-gold flex items-center gap-2"
+              className="bg-gold-500 text-black font-semibold py-3 px-6 rounded-sm transition-all duration-300 hover:bg-gold-400 flex items-center gap-2"
             >
               <Plus size={18} />
               Add Event

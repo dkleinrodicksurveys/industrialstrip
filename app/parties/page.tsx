@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Crown, Users, Star, Sparkles, Phone, Calendar, Check, Wine, Music, Camera } from 'lucide-react'
+import { Crown, Users, Star, Sparkles, Phone, Calendar, Check, Wine } from 'lucide-react'
 
 const packages = [
   {
@@ -48,12 +48,6 @@ const packages = [
   },
 ]
 
-const addons = [
-  { icon: Wine, name: 'Extra Bottle Service', price: 'From $150' },
-  { icon: Star, name: 'Additional Dances', price: '$10-15 each' },
-  { icon: Music, name: 'Custom Song Request', price: '$25' },
-  { icon: Camera, name: 'Photo Package', price: '$50' },
-]
 
 export default function PartiesPage() {
   return (
@@ -158,24 +152,6 @@ export default function PartiesPage() {
                 >
                   Book This Package
                 </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Add-ons */}
-      <section className="px-4 py-16">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="font-display text-3xl font-bold text-center mb-8 text-white">
-            Customize Your Experience
-          </h2>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {addons.map((addon, i) => (
-              <div key={i} className="luxury-card p-4 text-center">
-                <addon.icon size={24} className="mx-auto mb-2 text-gold-500" />
-                <h3 className="font-semibold text-white text-sm mb-1">{addon.name}</h3>
-                <p className="text-gold-500 text-sm">{addon.price}</p>
               </div>
             ))}
           </div>
