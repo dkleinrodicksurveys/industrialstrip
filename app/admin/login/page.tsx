@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Lock, User, AlertCircle } from 'lucide-react'
@@ -19,17 +18,19 @@ export default function AdminLogin() {
     setError('')
 
     try {
-      const result = await signIn('credentials', {
-        username,
-        password,
-        redirect: false,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       })
 
-      if (result?.error) {
-        setError('Invalid username or password')
-      } else {
+      const data = await response.json()
+
+      if (data.success) {
         router.push('/admin')
         router.refresh()
+      } else {
+        setError('Invalid username or password')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')

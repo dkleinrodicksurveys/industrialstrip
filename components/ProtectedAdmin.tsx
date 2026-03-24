@@ -1,21 +1,33 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import AdminLayout from './AdminLayout'
 
 export default function ProtectedAdmin({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
   const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/check')
+      if (response.ok) {
+        setIsAuthenticated(true)
+      } else {
+        setIsAuthenticated(false)
+        router.push('/admin/login')
+      }
+    } catch (error) {
+      setIsAuthenticated(false)
       router.push('/admin/login')
     }
-  }, [status, router])
+  }
 
-  if (status === 'loading') {
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-luxury-black flex items-center justify-center">
         <div className="text-center">
@@ -26,7 +38,7 @@ export default function ProtectedAdmin({ children }: { children: React.ReactNode
     )
   }
 
-  if (!session) {
+  if (!isAuthenticated) {
     return null
   }
 

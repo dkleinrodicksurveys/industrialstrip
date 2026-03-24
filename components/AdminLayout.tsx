@@ -1,9 +1,8 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard,
   Image as ImageIcon,
@@ -24,11 +23,17 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const isActive = (href: string) => {
     if (href === '/admin') return pathname === '/admin'
     return pathname.startsWith(href)
+  }
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/admin/login')
   }
 
   return (
@@ -75,7 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="absolute bottom-6 left-6 right-6">
           <button
-            onClick={() => signOut({ callbackUrl: '/admin/login' })}
+            onClick={handleLogout}
             className="admin-nav-item w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
           >
             <LogOut size={20} />
