@@ -17,33 +17,31 @@ export const authOptions: NextAuthOptions = {
 
         // Check against environment variables
         const adminUsername = process.env.ADMIN_USERNAME || 'admin'
+        const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123'
         const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
 
         if (credentials.username !== adminUsername) {
           return null
         }
 
-        // If no hash is set, compare directly (for initial setup)
-        if (!adminPasswordHash) {
-          // Default password for initial setup - CHANGE THIS!
-          if (credentials.password === 'changeme123') {
+        // Check plain text password first (simpler setup)
+        if (adminPassword && credentials.password === adminPassword) {
+          return {
+            id: '1',
+            name: 'Admin',
+            email: 'admin@industrialstrip.com',
+          }
+        }
+
+        // If hash is set, compare with hashed password
+        if (adminPasswordHash) {
+          const isValid = await bcrypt.compare(credentials.password, adminPasswordHash)
+          if (isValid) {
             return {
               id: '1',
               name: 'Admin',
               email: 'admin@industrialstrip.com',
             }
-          }
-          return null
-        }
-
-        // Compare with hashed password
-        const isValid = await bcrypt.compare(credentials.password, adminPasswordHash)
-
-        if (isValid) {
-          return {
-            id: '1',
-            name: 'Admin',
-            email: 'admin@industrialstrip.com',
           }
         }
 
