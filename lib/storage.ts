@@ -29,10 +29,22 @@ export interface Promotion {
   active: boolean
 }
 
+export interface WeeklySpecial {
+  id: string
+  title: string
+  day: string
+  time: string
+  description: string
+  features: string[]
+  image?: string
+  active: boolean
+}
+
 // In-memory storage for local development
 let localPhotos: Photo[] | null = null
 let localEvents: Event[] | null = null
 let localPromotions: Promotion[] | null = null
+let localWeeklySpecials: WeeklySpecial[] | null = null
 
 // Check if we're using Vercel KV or local storage
 const useVercelKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
@@ -50,6 +62,7 @@ async function getKV() {
 const PHOTOS_KEY = 'photos'
 const EVENTS_KEY = 'events'
 const PROMOTIONS_KEY = 'promotions'
+const WEEKLY_SPECIALS_KEY = 'weekly_specials'
 
 // Photos
 export async function getPhotos(): Promise<Photo[]> {
@@ -181,6 +194,50 @@ export async function deletePromotion(id: string): Promise<void> {
   await savePromotions(filtered)
 }
 
+// Weekly Specials
+export async function getWeeklySpecials(): Promise<WeeklySpecial[]> {
+  try {
+    const kv = await getKV()
+    if (kv) {
+      const specials = await kv.get<WeeklySpecial[]>(WEEKLY_SPECIALS_KEY)
+      return specials || getDefaultWeeklySpecials()
+    }
+    return localWeeklySpecials || getDefaultWeeklySpecials()
+  } catch {
+    return localWeeklySpecials || getDefaultWeeklySpecials()
+  }
+}
+
+export async function saveWeeklySpecials(specials: WeeklySpecial[]): Promise<void> {
+  const kv = await getKV()
+  if (kv) {
+    await kv.set(WEEKLY_SPECIALS_KEY, specials)
+  } else {
+    localWeeklySpecials = specials
+  }
+}
+
+export async function addWeeklySpecial(special: WeeklySpecial): Promise<void> {
+  const specials = await getWeeklySpecials()
+  specials.push(special)
+  await saveWeeklySpecials(specials)
+}
+
+export async function updateWeeklySpecial(special: WeeklySpecial): Promise<void> {
+  const specials = await getWeeklySpecials()
+  const index = specials.findIndex(s => s.id === special.id)
+  if (index !== -1) {
+    specials[index] = special
+    await saveWeeklySpecials(specials)
+  }
+}
+
+export async function deleteWeeklySpecial(id: string): Promise<void> {
+  const specials = await getWeeklySpecials()
+  const filtered = specials.filter(s => s.id !== id)
+  await saveWeeklySpecials(filtered)
+}
+
 // Default data
 function getDefaultEvents(): Event[] {
   return [
@@ -196,43 +253,23 @@ function getDefaultEvents(): Event[] {
     },
     {
       id: '2',
-      title: '$10 Dance Nights',
-      date: 'Every Monday & Tuesday',
-      time: '9 PM - 3 AM',
-      description: 'Start your week right with $10 dances all night long. The best deal in Chicagoland!',
-      features: ['$10 Dances All Night', 'Drink Specials', 'Full Lineup'],
+      title: 'July 4th Celebration',
+      date: 'July 4, 2025',
+      time: '8 PM - 4 AM',
+      description: 'Celebrate Independence Day with our biggest party of the summer! Red, white, and blue themed entertainment.',
+      features: ['Themed Costumes', '$5 Domestic Beers', 'Fireworks Viewing', 'VIP Packages'],
       featured: false,
-      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/57491a75-b6fb-44e4-8fcd-75646dade413/%2410.2.jpg',
+      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/7cac448a-4516-435c-a86d-b70c0db73010/tami-donaldson-sexy-patriot-2014-007.jpg',
     },
     {
       id: '3',
-      title: 'Thick Thursday',
-      date: 'Every Thursday',
-      time: '9 PM - 3 AM',
-      description: 'Celebrating curves with our most requested entertainers. Special drink prices all night.',
-      features: ['Themed Entertainment', '$3 Wells', 'No Cover Before 10 PM'],
+      title: 'Halloween Bash',
+      date: 'October 31, 2025',
+      time: '8 PM - 4 AM',
+      description: 'Our legendary Halloween party with costume contests, themed performances, and spooky specials.',
+      features: ['Costume Contest', 'Cash Prizes', 'Themed Drinks', 'Extended Hours'],
       featured: false,
-      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/bbf87e59-b9e6-4cd5-9169-60a9407413cd/15948330_xl.jpg',
-    },
-    {
-      id: '4',
-      title: 'Fantasy Friday',
-      date: 'Every Friday',
-      time: '9 PM - 4 AM',
-      description: 'Start your weekend right with our premium Friday night experience.',
-      features: ['Premium Lineup', 'VIP Specials', 'Late Night Hours'],
-      featured: false,
-      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/f36a7a05-9eb5-45ab-9b27-efe7a42a29bf/DSC04281-Edit.jpg',
-    },
-    {
-      id: '5',
-      title: 'Saturday Night Live',
-      date: 'Every Saturday',
-      time: '9 PM - 4 AM',
-      description: 'Our biggest night of the week with the most dancers and the hottest entertainment.',
-      features: ['Maximum Dancers', 'Champagne Room Deals', 'DJ All Night'],
-      featured: false,
-      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/ad009cc3-247a-4335-b6c3-6e39445eaba9/_Cinnamon+1.jpg',
+      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/60c9e5df-acf9-4a35-8117-0d0883bcf0f2/Haloween2-300.jpg',
     },
   ]
 }
@@ -570,6 +607,51 @@ function getDefaultPhotos(): Photo[] {
       category: 'events',
       alt: 'Football Night',
       createdAt: '2024-02-11',
+    },
+  ]
+}
+
+function getDefaultWeeklySpecials(): WeeklySpecial[] {
+  return [
+    {
+      id: '1',
+      title: '$10 Dance Nights',
+      day: 'Monday & Tuesday',
+      time: '9 PM - 3 AM',
+      description: 'Start your week right with $10 dances all night long. The best deal in Chicagoland!',
+      features: ['$10 Dances All Night', 'Drink Specials', 'Full Lineup'],
+      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/57491a75-b6fb-44e4-8fcd-75646dade413/%2410.2.jpg',
+      active: true,
+    },
+    {
+      id: '2',
+      title: 'Thick Thursday',
+      day: 'Thursday',
+      time: '9 PM - 3 AM',
+      description: 'Celebrating curves with our most requested entertainers. Special drink prices all night.',
+      features: ['Themed Entertainment', '$3 Wells', 'No Cover Before 10 PM'],
+      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/bbf87e59-b9e6-4cd5-9169-60a9407413cd/15948330_xl.jpg',
+      active: true,
+    },
+    {
+      id: '3',
+      title: 'Fantasy Friday',
+      day: 'Friday',
+      time: '9 PM - 4 AM',
+      description: 'Start your weekend right with our premium Friday night experience.',
+      features: ['Premium Lineup', 'VIP Specials', 'Late Night Hours'],
+      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/f36a7a05-9eb5-45ab-9b27-efe7a42a29bf/DSC04281-Edit.jpg',
+      active: true,
+    },
+    {
+      id: '4',
+      title: 'Saturday Night Live',
+      day: 'Saturday',
+      time: '9 PM - 4 AM',
+      description: 'Our biggest night of the week with the most dancers and the hottest entertainment.',
+      features: ['Maximum Dancers', 'Champagne Room Deals', 'DJ All Night'],
+      image: 'https://images.squarespace-cdn.com/content/v1/68d2e14604d18c6447a49cc5/ad009cc3-247a-4335-b6c3-6e39445eaba9/_Cinnamon+1.jpg',
+      active: true,
     },
   ]
 }

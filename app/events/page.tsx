@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Users, Loader2 } from 'lucide-react'
+import { Calendar, Clock, Users, Loader2, Star } from 'lucide-react'
 import Link from 'next/link'
 
 interface Event {
@@ -15,23 +15,44 @@ interface Event {
   image?: string
 }
 
+interface WeeklySpecial {
+  id: string
+  title: string
+  day: string
+  time: string
+  description: string
+  features: string[]
+  image?: string
+  active: boolean
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
+  const [weeklySpecials, setWeeklySpecials] = useState<WeeklySpecial[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    loadEvents()
+    loadData()
   }, [])
 
-  const loadEvents = async () => {
+  const loadData = async () => {
     try {
-      const response = await fetch('/api/public/events')
-      if (response.ok) {
-        const data = await response.json()
+      const [eventsRes, specialsRes] = await Promise.all([
+        fetch('/api/public/events'),
+        fetch('/api/admin/weekly-specials')
+      ])
+
+      if (eventsRes.ok) {
+        const data = await eventsRes.json()
         setEvents(data)
       }
+
+      if (specialsRes.ok) {
+        const data = await specialsRes.json()
+        setWeeklySpecials(data.filter((s: WeeklySpecial) => s.active))
+      }
     } catch (error) {
-      console.error('Failed to load events:', error)
+      console.error('Failed to load data:', error)
     }
     setIsLoading(false)
   }
@@ -140,14 +161,82 @@ export default function EventsPage() {
             </section>
           )}
 
+          {/* Weekly Specials Section */}
+          {weeklySpecials.length > 0 && (
+            <>
+              <div className="section-divider max-w-4xl mx-auto"></div>
+
+              <section className="px-4 mb-16">
+                <div className="max-w-7xl mx-auto">
+                  <div className="text-center mb-8">
+                    <h2 className="font-display text-3xl font-bold text-white mb-2">
+                      <Star className="inline-block text-gold-500 mr-2" size={28} />
+                      Weekly Specials
+                    </h2>
+                    <p className="text-gray-400">Something exciting every night of the week</p>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {weeklySpecials.map((special) => (
+                      <div
+                        key={special.id}
+                        className="luxury-card overflow-hidden hover:border-gold-500/50 transition-all duration-300"
+                      >
+                        {special.image && (
+                          <div className="h-36 overflow-hidden relative">
+                            <img
+                              src={special.image}
+                              alt={special.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                            <div className="absolute bottom-2 left-2">
+                              <span className="px-2 py-1 bg-gold-500 text-black text-xs font-bold rounded">
+                                Every {special.day}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="p-4">
+                          <h3 className="text-lg font-semibold text-white mb-1">{special.title}</h3>
+                          {!special.image && (
+                            <p className="text-gold-500 text-sm mb-1">Every {special.day}</p>
+                          )}
+                          <p className="text-gray-400 text-xs mb-2">{special.time}</p>
+                          <p className="text-gray-400 text-sm mb-3 line-clamp-2">{special.description}</p>
+
+                          <div className="flex flex-wrap gap-1">
+                            {special.features.slice(0, 2).map((feature, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 bg-luxury-black text-gray-400 text-xs rounded"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+
           <div className="section-divider max-w-4xl mx-auto"></div>
 
-          {/* All Events Grid */}
+          {/* Special Events Grid */}
           <section className="px-4">
             <div className="max-w-7xl mx-auto">
-              <h2 className="font-display text-3xl font-bold mb-8 text-center text-white">
-                All Events
-              </h2>
+              <div className="text-center mb-8">
+                <h2 className="font-display text-3xl font-bold text-white mb-2">
+                  <Calendar className="inline-block text-gold-500 mr-2" size={28} />
+                  Special Events
+                </h2>
+                <p className="text-gray-400">Upcoming parties and celebrations</p>
+              </div>
 
               {events.length > 0 ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -209,8 +298,8 @@ export default function EventsPage() {
               ) : (
                 <div className="text-center py-12">
                   <Calendar size={48} className="mx-auto mb-4 text-gray-600" />
-                  <p className="text-gray-400">No events scheduled yet.</p>
-                  <p className="text-gray-500 text-sm mt-1">Check back soon!</p>
+                  <p className="text-gray-400">No special events scheduled yet.</p>
+                  <p className="text-gray-500 text-sm mt-1">Check out our weekly specials above!</p>
                 </div>
               )}
             </div>

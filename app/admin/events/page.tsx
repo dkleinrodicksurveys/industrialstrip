@@ -121,8 +121,8 @@ export default function AdminEvents() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Events</h1>
-            <p className="text-gray-400 mt-1">Manage your events and special nights</p>
+            <h1 className="text-3xl font-bold text-white">Special Events</h1>
+            <p className="text-gray-400 mt-1">Manage one-time events like holiday parties and special celebrations</p>
           </div>
           <div className="flex gap-2">
             <button

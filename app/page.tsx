@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Calendar, Star, Wine, Users, MapPin, Clock, Car, CreditCard, Phone } from 'lucide-react'
 import FeaturedEvent from '@/components/FeaturedEvent'
+import WeeklySpecials from '@/components/WeeklySpecials'
 
 export default function Home() {
   return (
@@ -83,6 +84,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Weekly Specials */}
+      <WeeklySpecials />
 
       <div className="section-divider max-w-4xl mx-auto"></div>
 

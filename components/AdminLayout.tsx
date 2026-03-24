@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Calendar,
   Tag,
+  Star,
   LogOut,
   Menu,
   X
@@ -17,8 +18,9 @@ import { useState } from 'react'
 const navItems = [
   { href: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
   { href: '/admin/photos', icon: <ImageIcon size={20} />, label: 'Photos' },
-  { href: '/admin/events', icon: <Calendar size={20} />, label: 'Events' },
-  { href: '/admin/promotions', icon: <Tag size={20} />, label: 'Promotions' },
+  { href: '/admin/weekly-specials', icon: <Star size={20} />, label: 'Weekly Specials' },
+  { href: '/admin/events', icon: <Calendar size={20} />, label: 'Special Events' },
+  { href: '/admin/promotions', icon: <Tag size={20} />, label: 'VIP Packages' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
